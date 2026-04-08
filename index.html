@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Scavenger Hunt - สุ่มไอเทม</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            background-attachment: fixed;
+            color: white;
+            min-height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .item-card {
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease-out forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .item-card:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading Spinner */
+        .loader {
+            border: 4px solid rgba(255,255,255,0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4">
+
+    <!-- Container หลัก -->
+    <div class="max-w-3xl w-full glass-panel rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+        
+        <!-- รูปแบบตกแต่ง -->
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-500 rounded-full mix-blend-multiply filter blur-2xl opacity-50"></div>
+        <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-500 rounded-full mix-blend-multiply filter blur-2xl opacity-50"></div>
+
+        <!-- Header -->
+        <div class="text-center relative z-10 mb-8">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-2 tracking-wide uppercase">
+                <i class="fa-solid fa-crosshairs text-blue-400 mr-2"></i>AI Scavenger Hunt
+            </h1>
+            <p class="text-gray-300">ภารกิจล่าท้า AI - สุ่มไอเทม 10 ชิ้นแล้ววิ่งไปหาเลย!</p>
+        </div>
+
+        <!-- Section 1: กรอกชื่อ (แสดงเป็นค่าเริ่มต้น) -->
+        <div id="inputSection" class="relative z-10 flex flex-col items-center">
+            <div class="w-full max-w-md">
+                <label for="playerName" class="block text-sm font-medium text-gray-300 mb-2">กรอกชื่อเล่นของน้องเลย:</label>
+                <input type="text" id="playerName" placeholder="เช่น น้องนนท์, น้องมายด์..." 
+                    class="w-full px-5 py-4 rounded-xl bg-gray-800 border-2 border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition shadow-inner text-lg">
+                <div id="errorMsg" class="text-red-400 text-sm mt-2 hidden"><i class="fa-solid fa-triangle-exclamation mr-1"></i> กรุณากรอกชื่อก่อนเริ่มเกมนะครับ!</div>
+            </div>
+            
+            <button onclick="startRandomizer()" class="mt-8 px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white text-xl font-bold rounded-full shadow-lg transform transition hover:scale-105 active:scale-95 flex items-center justify-center gap-2 w-full max-w-md">
+                <i class="fa-solid fa-dice"></i> สุ่มภารกิจเลย!
+            </button>
+        </div>
+
+        <!-- Section 2: หน้าโหลดดิ้ง (ซ่อนไว้) -->
+        <div id="loadingSection" class="relative z-10 hidden flex-col items-center justify-center py-12">
+            <div class="loader mb-4"></div>
+            <h2 class="text-2xl font-bold animate-pulse text-blue-300">ระบบกำลังสุ่มไอเทม...</h2>
+            <p class="text-gray-400 mt-2">เตรียมตัววิ่งให้พร้อม!</p>
+        </div>
+
+        <!-- Section 3: หน้าผลลัพธ์ (ซ่อนไว้) -->
+        <div id="resultSection" class="relative z-10 hidden">
+            <div class="text-center mb-6 border-b border-gray-700 pb-4">
+                <h2 class="text-3xl font-bold text-white mb-2">
+                    📢 ประกาศภารกิจ!
+                </h2>
+                <h3 class="text-2xl text-blue-300 font-semibold" id="greetingText">น้อง... ของที่ต้องหา</h3>
+            </div>
+
+            <!-- Grid แสดงรายการของ 10 ชิ้น -->
+            <div id="itemsGrid" class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-4 mb-8">
+                <!-- รายการจะถูกแทรกที่นี่โดย JavaScript -->
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+                <button onclick="resetGame()" class="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-left"></i> สุ่มผู้เล่นคนต่อไป
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ลิขสิทธิ์ / เครดิตเล็กๆ -->
+    <div class="mt-8 text-gray-500 text-sm">
+        จัดทำโดยทีมงานวิศวคอมฯ x AI
+    </div>
+
+    <script>
+        // ข้อมูลไอเทมทั้ง 20 ชิ้น พร้อมไอคอน FontAwesome ที่สอดคล้อง
+        const allItems = [
+            { name: "ขวดน้ำ", icon: "fa-bottle-water" },
+            { name: "รีโมท", icon: "fa-tv" },
+            { name: "เมาส์", icon: "fa-computer-mouse" },
+            { name: "ปากกา", icon: "fa-pen" },
+            { name: "กรรไกร", icon: "fa-scissors" },
+            { name: "โทรศัพท์", icon: "fa-mobile-screen" },
+            { name: "คีย์บอร์ด", icon: "fa-keyboard" },
+            { name: "ลำโพงบลูทูธ", icon: "fa-speaker" },
+            { name: "แปรงลบกระดาน", icon: "fa-eraser" },
+            { name: "กระเป๋าตัง", icon: "fa-wallet" },
+            { name: "ปลั๊กไฟ", icon: "fa-plug" },
+            { name: "ปากกาไวท์บอร์ด", icon: "fa-marker" },
+            { name: "กุญแจ", icon: "fa-key" },
+            { name: "ไอแพด", icon: "fa-tablet-screen-button" },
+            { name: "ถุงเท้า", icon: "fa-socks" },
+            { name: "รองเท้า", icon: "fa-shoe-prints" },
+            { name: "รถกระบะ", icon: "fa-truck-pickup" },
+            { name: "มอเตอร์ไซค์", icon: "fa-motorcycle" },
+            { name: "ภูเขาฟูจิ", icon: "fa-mountain-sun" },
+            { name: "คน", icon: "fa-person" }
+        ];
+
+        // ฟังก์ชันสลับลำดับ Array (Fisher-Yates Shuffle)
+        function shuffleArray(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function startRandomizer() {
+            const nameInput = document.getElementById('playerName');
+            const playerName = nameInput.value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+
+            // ตรวจสอบว่ากรอกชื่อหรือยัง
+            if (!playerName) {
+                errorMsg.classList.remove('hidden');
+                nameInput.classList.add('border-red-500');
+                nameInput.focus();
+                return;
+            }
+
+            // ซ่อน Error ถ้ามี
+            errorMsg.classList.add('hidden');
+            nameInput.classList.remove('border-red-500');
+
+            // ซ่อนหน้ากรอกชื่อ โชว์หน้าโหลด
+            document.getElementById('inputSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+            document.getElementById('loadingSection').classList.add('flex');
+
+            // หน่วงเวลาจำลองการสุ่ม 1.5 วินาที เพื่อความตื่นเต้น
+            setTimeout(() => {
+                generateResult(playerName);
+            }, 1500);
+        }
+
+        function generateResult(playerName) {
+            // ซ่อนหน้าโหลด โชว์ผลลัพธ์
+            document.getElementById('loadingSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('flex');
+            document.getElementById('resultSection').classList.remove('hidden');
+
+            // อัปเดตชื่อผู้เล่น
+            document.getElementById('greetingText').innerText = `น้อง ${playerName} ... ของที่ต้องหาตามนี้เลย!`;
+
+            // สุ่มของ 10 ชิ้น
+            const shuffledItems = shuffleArray([...allItems]);
+            const selectedItems = shuffledItems.slice(0, 10);
+
+            // สร้าง UI แสดงรายการของ
+            const grid = document.getElementById('itemsGrid');
+            grid.innerHTML = ''; // เคลียร์ของเก่า
+
+            selectedItems.forEach((item, index) => {
+                // คำนวณ delay สำหรับอนิเมชั่นเด้งทีละอัน
+                const animationDelay = index * 0.1;
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `item-card bg-gray-800 rounded-xl p-4 flex items-center border border-gray-700`;
+                itemDiv.style.animationDelay = `${animationDelay}s`;
+                
+                itemDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-blue-900 text-blue-300 flex items-center justify-center font-bold mr-3 flex-shrink-0">
+                        ${index + 1}
+                    </div>
+                    <div class="text-gray-400 mr-3 text-xl w-6 flex justify-center">
+                        <i class="fa-solid ${item.icon}"></i>
+                    </div>
+                    <div class="text-white font-medium text-lg">${item.name}</div>
+                `;
+                grid.appendChild(itemDiv);
+            });
+        }
+
+        function resetGame() {
+            // ล้างค่าและกลับไปหน้าแรก
+            document.getElementById('playerName').value = '';
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('inputSection').classList.remove('hidden');
+            document.getElementById('playerName').focus();
+        }
+
+        // กด Enter เพื่อสุ่มได้เลย
+        document.getElementById('playerName').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                startRandomizer();
+            }
+        });
+    </script>
+</body>
+</html>
